@@ -484,3 +484,83 @@ sys_pipe(void)
   }
   return 0;
 }
+
+//task 3
+uint64
+sys_symlink(void){
+  char oldpath[MAXPATH], newpath[MAXPATH];
+  struct inode * ip;
+
+  if(asgstr(0, oldpath, MAXPATH)<0 || asgstr(1, newpath, MAXPATH)<0)
+    return -1;
+  
+  begin_op();
+  if((ip = create(newpath, T_SYMLINK, 0, 0)) == 0){
+    end_op();
+    return -1;
+  }
+
+  int len = strlen(oldpath);
+  if(len > MAXPATH){
+    end_op();
+    return -1;
+  }
+
+  if(writei(ip, 0, (uint64)&len, 0, sizeof(int)) != sizeof(int)){
+    end_op();
+    return -1;
+  }
+
+  if(writei(ip, 0, (uint64)oldpath, sizeof(int), len+1) != len+1){
+    end_op();
+    return -1;
+  }
+
+  iupdate(ip);
+  iunlockput(ip);
+  end_op();
+  return 0;
+}
+
+uint64
+sys_readlink(void){
+  char pathname[MAXPATH];
+  int bufsize;
+  uint64 buf;
+
+  if(argstr(0, pathname, MAXPATH)<0 || argaddr(1, &buf)<0 || argint(2, &bufsize)< 0)
+    return -1;
+
+  struct inode* ip;
+  begin_op();
+  if((ip=namei(pathname)) == 0){ 
+    end_op(); //path doent exist
+    return -1;
+  }
+
+  ilock(ip);
+  if(ip->type!= T_SYMLINK){
+    iunlock(ip); //not a symbolic link
+    end_op();
+    return -1;
+  }
+
+  if(ip->size >bufsize){
+    iunlock(ip); //bufsize is smaller than the length of the path
+    end_op();
+    return -1;
+  }
+
+  char buf2[bufsize];
+  int res = readi(ip, 0 , (uint64)buf, 0, bufsize);
+  struct proc * p = myproc();
+  if(copyout(p->pagetable, buf, buf2, bufsize)<0){
+    iunlock(ip); 
+    end_op();
+    return -1;
+  }
+
+  iunlock(ip); 
+  end_op();
+  return res;
+}
