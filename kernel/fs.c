@@ -697,3 +697,36 @@ nameiparent(char *path, char *name)
 {
   return namex(path, 1, name);
 }
+
+//callee must hold ip's lock
+struct inode *
+dereference_link(struct inode * ip, char * path){
+  if(ip->type == T_SYMLINK){
+    int count = 0;
+    while(ip->type == T_SYMLINK && count <MAX_DEREFERENCE){
+      int len = 0;
+      readi(ip, 0, (uint64)&len, 0, sizeof(int));
+      readi(ip, 0, (uint64)path, sizeof(int), len+1);
+      iunlockput(ip);
+
+      if((ip=namei(path)) == 0){
+        end_op();
+        return 0;
+      }
+
+      ilock(ip);
+      count++;
+    }
+    if(count>=MAX_DEREFERENCE){
+      iunlockput(ip);
+      end_op();
+      return 0;
+    }
+  }
+  return ip;
+}
+
+// int
+// read_link(const char * path, char * buf, int bufsize){
+
+// }

@@ -254,6 +254,8 @@ create(char *path, short type, short major, short minor)
     ilock(ip);
     if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
       return ip;
+    if(type == T_SYMLINK)
+      return ip;
     iunlockput(ip);
     return 0;
   }
@@ -309,7 +311,16 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
-    if(ip->type == T_DIR && omode != O_RDONLY){
+
+    //task 3
+    if(ip->type == T_SYMLINK && omode!=O_SYMNOFOLOW){
+      if((ip = dereference_link(ip, path)) == 0){
+        end_op();
+        return -1;
+      } 
+    }
+
+    if(ip->type == T_DIR && omode != O_RDONLY && omode!=O_SYMNOFOLOW){
       iunlockput(ip);
       end_op();
       return -1;
@@ -400,6 +411,15 @@ sys_chdir(void)
     return -1;
   }
   ilock(ip);
+
+  //task 3
+  if(ip->type == T_SYMLINK){
+    if((ip = dereference_link(ip, path)) == 0){
+      end_op();
+      return -1;
+    } 
+  }
+
   if(ip->type != T_DIR){
     iunlockput(ip);
     end_op();
@@ -491,7 +511,7 @@ sys_symlink(void){
   char oldpath[MAXPATH], newpath[MAXPATH];
   struct inode * ip;
 
-  if(asgstr(0, oldpath, MAXPATH)<0 || asgstr(1, newpath, MAXPATH)<0)
+  if(argstr(0, oldpath, MAXPATH)<0 || argstr(1, newpath, MAXPATH)<0)
     return -1;
   
   begin_op();

@@ -29,6 +29,19 @@ exec(char *path, char **argv)
   }
   ilock(ip);
 
+  //task 3
+  // if(ip->type == T_SYMLINK){
+  //   if((ip = dereference_link(ip, path)) == 0){
+  //     end_op();
+  //     return -1;
+  //   } 
+  // }
+
+  if((ip = dereference_link(ip, path)) == 0){
+      end_op();
+      return -1;
+    } 
+
   // Check ELF header
   if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
