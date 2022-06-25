@@ -254,8 +254,8 @@ create(char *path, short type, short major, short minor)
     ilock(ip);
     if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
       return ip;
-    if(type == T_SYMLINK)
-      return ip;
+    // if(type == T_SYMLINK)
+    //   return ip;
     iunlockput(ip);
     return 0;
   }
@@ -313,14 +313,15 @@ sys_open(void)
     ilock(ip);
 
     //task 3
-    if(ip->type == T_SYMLINK && omode!=O_SYMNOFOLOW){
+    if(ip->type == T_SYMLINK && (omode!=O_NOFOLLOW)){
+      printf("omode = %d O_NOFOOLW = %d\n", omode, O_NOFOLLOW);
       if((ip = dereference_link(ip, path)) == 0){
         end_op();
         return -1;
       } 
     }
 
-    if(ip->type == T_DIR && omode != O_RDONLY && omode!=O_SYMNOFOLOW){
+    if(ip->type == T_DIR && omode != O_RDONLY && (omode!=O_NOFOLLOW)){
       iunlockput(ip);
       end_op();
       return -1;

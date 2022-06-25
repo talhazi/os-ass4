@@ -31,7 +31,7 @@ ls(char *path)
   struct dirent de;
   struct stat st;
 
-  if((fd = open(path, O_SYMNOFOLOW)) < 0){ //task 3
+  if((fd = open(path, O_NOFOLLOW)) < 0){ //task 3
     fprintf(2, "ls: cannot open %s\n", path);
     return;
   }
@@ -41,6 +41,7 @@ ls(char *path)
     close(fd);
     return;
   }
+  
 
   switch(st.type){
   case T_SYMLINK: //task 3
@@ -49,6 +50,7 @@ ls(char *path)
     break;
   
   case T_FILE:
+    printf("st.type: %d\n", st.type);
     printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
     break;
 
@@ -69,7 +71,12 @@ ls(char *path)
         printf("ls: cannot stat %s\n", buf);
         continue;
       }
-      printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+      if(st.type==T_SYMLINK){
+        char path2[512];
+        readlink(path2, buf, 512);
+        printf("%s -> %s %d %d 0\n", fmtname(path2), buf, st.type, st.ino);
+      }
+      else printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
     }
     break;
   }

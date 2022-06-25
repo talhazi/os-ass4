@@ -6,7 +6,7 @@ int
 main(int argc, char *argv[])
 {
   if(argc != 3 && argc != 4){
-    fprintf(2, "Usage: ln old new\n");
+    fprintf(2, "Usage: ln old new || ln -s old new\n");
     exit(1);
   }
   if(argc == 4){
