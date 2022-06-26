@@ -552,36 +552,36 @@ sys_readlink(void){
   if(argstr(0, pathname, MAXPATH)<0 || argaddr(1, &buf)<0 || argint(2, &bufsize)< 0)
     return -1;
 
-  struct inode* ip;
+  struct inode * ip;
   begin_op();
-  if((ip=namei(pathname)) == 0){ 
-    end_op(); //path doent exist
+  if((ip=namei(pathname))==0){
+    end_op();
     return -1;
   }
 
   ilock(ip);
-  if(ip->type!= T_SYMLINK){
-    iunlock(ip); //not a symbolic link
+  if(ip->type!=T_SYMLINK){
+    iunlock(ip);
     end_op();
     return -1;
   }
 
-  if(ip->size >bufsize){
-    iunlock(ip); //bufsize is smaller than the length of the path
+  if(ip->size > bufsize){
+    iunlock(ip);
     end_op();
-    return -1;
+    return -1;    
   }
 
-  char buf2[bufsize];
-  int res = readi(ip, 0 , (uint64)buf, 0, bufsize);
+  char buffer[bufsize];
+  int res = readi(ip, 0, (uint64)buffer, 0, bufsize);
   struct proc * p = myproc();
-  if(copyout(p->pagetable, buf, buf2, bufsize)<0){
-    iunlock(ip); 
+  if(copyout(p->pagetable, buf, buffer, bufsize)<0){
+    iunlock(ip);
     end_op();
-    return -1;
+    return -1;    
   }
 
-  iunlock(ip); 
+  iunlock(ip);
   end_op();
-  return res;
+  return res;    
 }

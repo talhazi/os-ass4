@@ -50,7 +50,6 @@ ls(char *path)
     break;
   
   case T_FILE:
-    printf("st.type: %d\n", st.type);
     printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
     break;
 
@@ -71,10 +70,12 @@ ls(char *path)
         printf("ls: cannot stat %s\n", buf);
         continue;
       }
+
       if(st.type==T_SYMLINK){
-        char path2[512];
-        readlink(path2, buf, 512);
-        printf("%s -> %s %d %d 0\n", fmtname(path2), buf, st.type, st.ino);
+        char path2[256];
+        readlink(buf, path2, 256);
+        // printf("path2: %s\n", path2);
+        printf("%s -> %s %d %d 0\n", fmtname(buf), path2, st.type, st.ino);
       }
       else printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
     }
