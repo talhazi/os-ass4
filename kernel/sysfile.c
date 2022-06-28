@@ -254,8 +254,8 @@ create(char *path, short type, short major, short minor)
     ilock(ip);
     if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
       return ip;
-    // if(type == T_SYMLINK)
-    //   return ip;
+    if(type == T_SYMLINK)
+      return ip;
     iunlockput(ip);
     return 0;
   }
@@ -543,16 +543,62 @@ sys_symlink(void){
   return 0;
 }
 
+
+
+uint64
+read_link(char * pathname, char * buf, int bufsize){
+  struct inode *ip;
+  char target[MAXPATH];
+
+  if((ip = namei(pathname)) == 0)
+    return -1;
+  
+  ilock(ip);
+
+  if(ip->type!=T_SYMLINK){
+    iunlock(ip);
+    return -1;
+  }
+
+  int len = strlen(pathname);
+  if(len>MAXPATH){
+    iunlock(ip);
+    return -1;
+  }
+
+  if(readi(ip, 0, (uint64)&len, 0, sizeof(int)) != sizeof(int)){
+    iunlock(ip);
+    return -1;
+  }
+
+  if(readi(ip, 0, (uint64)target, sizeof(int), len+1) != len+1){
+    iunlock(ip);
+    return -1;
+  }
+  safestrcpy(buf, (char*)target, bufsize);
+  iunlock(ip);
+  return 0;
+}
+
 uint64
 sys_readlink(void){
-  char pathname[MAXPATH];
+  char pathname[MAXPATH], pathbuf[MAXPATH];
   int bufsize;
   uint64 buf;
 
   if(argstr(0, pathname, MAXPATH)<0 || argaddr(1, &buf)<0 || argint(2, &bufsize)< 0)
     return -1;
+  
+  if(read_link(pathname, pathbuf, bufsize) != 0)
+    return -1;
+  
+  struct proc *p = myproc();
+  if(copyout(p->pagetable, buf, pathbuf, bufsize)<0)
+    return -1;
+  
+  return 0;
 
-  struct inode * ip;
+/*   struct inode * ip;
   begin_op();
   if((ip=namei(pathname))==0){
     end_op();
@@ -581,7 +627,8 @@ sys_readlink(void){
     return -1;    
   }
 
+
   iunlock(ip);
   end_op();
-  return res;    
+  return res;    */ 
 }

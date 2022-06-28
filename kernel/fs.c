@@ -424,6 +424,8 @@ bmap(struct inode *ip, uint bn)
       a[pos] = addr = balloc(ip->dev);
       log_write(bp);
     }
+    brelse(bp);
+    return addr;
   }
 
   panic("bmap: out of range");
@@ -663,10 +665,10 @@ namex(char *path, int nameiparent, char *name)
   while((path = skipelem(path, name)) != 0){
     ilock(ip);
 
-    if(! (ip = dereference_link(ip, path))){
-      // iunlockput(ip);
-      return 0;
-    }
+    // if(! (ip = dereference_link(ip, path))){
+    //   // iunlockput(ip);
+    //   return 0;
+    // }
 
     if(ip->type != T_DIR){
       iunlockput(ip);
@@ -732,19 +734,19 @@ dereference_link(struct inode * ip, char * path){
   return ip;
 }
 
-int
-readlink(const char * path, char * buf, int bufsize){
-  char name[DIRSIZ];
+// int
+// readlink(const char * path, char * buf, int bufsize){
+//   char name[DIRSIZ];
 
-  struct inode * ip = namex((char *)path, 0, name);
-  if(!ip) return -1;
+//   struct inode * ip = namex((char *)path, 0, name);
+//   if(!ip) return -1;
 
-  ilock(ip);
-  if(ip->type!=T_SYMLINK){
-    iunlock(ip);
-    return -1;
-  }
-  readi(ip, 0, (uint64)buf, 0, bufsize);
-  iunlock(ip);
-  return 0;
-}
+//   ilock(ip);
+//   if(ip->type!=T_SYMLINK){
+//     iunlock(ip);
+//     return -1;
+//   }
+//   readi(ip, 0, (uint64)buf, 0, bufsize);
+//   iunlock(ip);
+//   return 0;
+// }
